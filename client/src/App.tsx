@@ -1,10 +1,10 @@
 import React from 'react';
-import WorkdaysTable from './WorkdaysTable';
+import ResourceMatrix from './ResourceMatrix';
 
 export default function App() {
   return (
     <div>
-      <WorkdaysTable />
+      <ResourceMatrix />
     </div>
   );
 }
