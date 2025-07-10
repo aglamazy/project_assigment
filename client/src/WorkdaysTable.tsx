@@ -50,6 +50,11 @@ export default function WorkdaysTable() {
     return map;
   }, [data]);
 
+  const totalHours = React.useMemo(
+      () => data.reduce((sum, d) => sum + d.workingHours, 0),
+      [data]
+  );
+
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
   const weeks: JSX.Element[] = [];
   let currentWeek: (JSX.Element | null)[] = new Array(5).fill(null);
@@ -155,6 +160,9 @@ export default function WorkdaysTable() {
               </div>
           ))}
           {weeks}
+        </div>
+        <div style={{ marginTop: '8px', fontWeight: 'bold', textAlign: 'right' }}>
+          Total: {totalHours} hours
         </div>
       </div>
   );
