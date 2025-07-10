@@ -10,7 +10,7 @@ export const databaseProvider: Provider = {
       server: process.env.DB_SERVER || 'localhost',
       database: process.env.DB_NAME || 'master',
       options: {
-        encrypt: false,
+        encrypt: true,
         trustServerCertificate: true,
       },
     };
