@@ -4,7 +4,7 @@ This repository contains a simple **NestJS** backend and a **React** frontend.
 
 ## Server
 
-The `server` folder holds a minimal NestJS application. Run `npm run build` to compile TypeScript and `npm start` to start the server after installing dependencies.
+The `server` folder holds a minimal NestJS application. After running `npm install` to install dependencies, run `npm run build` to compile TypeScript and `npm start` to start the server.
 
 ## Client
 
