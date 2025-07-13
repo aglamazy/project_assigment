@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import harvestStore, { Project, TeamMember } from './HarvestStore';
 
 const allocations: Record<string, Record<string, number>> = {
@@ -11,6 +11,8 @@ const allocations: Record<string, Record<string, number>> = {
 export default function ResourceMatrix() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
+  const navigate = useNavigate();
+  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
 
   useEffect(() => {
     harvestStore.getProjects().then(setProjects).catch(() => {
@@ -55,6 +57,11 @@ export default function ResourceMatrix() {
     textAlign: 'center',
   };
 
+  const headerSpanStyle: React.CSSProperties = {
+    textDecoration: 'none',
+    cursor: 'pointer',
+  };
+
   const totalStyle: React.CSSProperties = {
     ...cellStyle,
     fontWeight: 'bold',
@@ -70,7 +77,17 @@ export default function ResourceMatrix() {
             <th style={cellStyle}></th>
             {projectNames.map((project) => (
               <th key={project} style={cellStyle}>
-                <Link to={`/project/${encodeURIComponent(project)}`}>{project}</Link>
+                <span
+                  style={{
+                    ...headerSpanStyle,
+                    color: hoveredProject === project ? '#007bff' : undefined,
+                  }}
+                  onClick={() => navigate(`/project/${encodeURIComponent(project)}`)}
+                  onMouseEnter={() => setHoveredProject(project)}
+                  onMouseLeave={() => setHoveredProject(null)}
+                >
+                  {project}
+                </span>
               </th>
             ))}
             <th style={totalStyle}>Total</th>
