@@ -1,5 +1,7 @@
 export type Project = { id: string; name: string };
 
+const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
+
 class HarvestStore {
   private projects: Project[] | null = null;
   private pending: Promise<Project[]> | null = null;
@@ -11,7 +13,7 @@ class HarvestStore {
     if (this.pending) {
       return this.pending;
     }
-    this.pending = fetch('/api/harvest/projects')
+    this.pending = fetch(`${API_BASE}/api/harvest/projects`)
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch projects: ${res.status}`);
