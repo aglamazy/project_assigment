@@ -6,13 +6,16 @@ export interface Workday {
 }
 
 class GlobalStore {
+  working_days: number[] = [];
   private cache: Map<string, Workday[]> = new Map();
   private pending: Map<string, Promise<Workday[]>> = new Map();
 
   async getWorkingDays(year: number, month: number): Promise<Workday[]> {
     const key = `${year}-${String(month).padStart(2, '0')}`;
     if (this.cache.has(key)) {
-      return Promise.resolve(this.cache.get(key)!);
+      const data = this.cache.get(key)!;
+      this.working_days = data.map((d) => parseInt(d.date.slice(-2), 10));
+      return Promise.resolve(data);
     }
     if (this.pending.has(key)) {
       return this.pending.get(key)!;
@@ -27,6 +30,7 @@ class GlobalStore {
         const data: Workday[] = await res.json();
         data.sort((a, b) => a.date.localeCompare(b.date));
         this.cache.set(key, data);
+        this.working_days = data.map((d) => parseInt(d.date.slice(-2), 10));
         this.pending.delete(key);
         return data;
       })
