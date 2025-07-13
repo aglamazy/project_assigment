@@ -1,4 +1,4 @@
-import {Controller, Get, Query} from '@nestjs/common';
+import {Controller, Get, InternalServerErrorException} from '@nestjs/common';
 import {HarvestService} from './harvest.service';
 
 @Controller('harvest')
@@ -14,6 +14,16 @@ export class HarvestController {
     @Get('clients')
     getClients() {
         return this.service.getClients();
+    }
+
+    @Get('team-members')
+    async getTeamMembers() {
+        try {
+            const teammates = await this.service.fetchTeammates();
+            return teammates.map(({ id, name }) => ({ id, name }));
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to fetch team members');
+        }
     }
 
 }
