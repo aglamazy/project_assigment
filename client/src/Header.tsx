@@ -23,7 +23,7 @@ const logoStyle: React.CSSProperties = {
 export default function Header() {
   return (
     <header style={headerStyle}>
-      <img src="/one-digital-logo.svg" alt="One Digital logo" style={logoStyle} />
+      <img src="/one-digital.webp" alt="One Digital logo" style={logoStyle} />
       <nav>
         <ul style={navStyle}>
           <li>Monthly plan</li>
