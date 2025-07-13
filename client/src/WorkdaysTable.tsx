@@ -1,11 +1,7 @@
 import React from 'react';
+import globalStore, { Workday } from './stores/GlobalStore';
 
-const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
-
-interface WorkdayData {
-  date: string;
-  workingHours: number;
-}
+type WorkdayData = Workday;
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
 
@@ -27,26 +23,21 @@ export default function WorkdaysTable() {
   }, [selectedYear]);
 
   React.useEffect(() => {
-    const abort = new AbortController();
-    fetch(
-      `${API_BASE}/globals/working-days?year=${selectedYear}&month=${String(selectedMonth).padStart(2, '0')}`,
-      { signal: abort.signal },
-    )
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch working days: ${res.status}`);
-        }
-        const d: WorkdayData[] = await res.json();
-        d.sort((a, b) => a.date.localeCompare(b.date));
-        setData(d);
+    let cancelled = false;
+    globalStore
+      .getWorkingDays(selectedYear, selectedMonth)
+      .then((d) => {
+        if (!cancelled) setData(d);
       })
       .catch((err) => {
-        if (err.name !== 'AbortError') {
+        if (!cancelled) {
           console.error(err);
           setData([]);
         }
       });
-    return () => abort.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedYear, selectedMonth]);
 
   const totalHours = React.useMemo(
