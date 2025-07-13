@@ -1,5 +1,7 @@
 import React from 'react';
 
+const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
+
 interface WorkdayData {
   date: string;
   workingHours: number;
@@ -25,56 +27,52 @@ export default function WorkdaysTable() {
   }, [selectedYear]);
 
   React.useEffect(() => {
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    const newData: WorkdayData[] = [];
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(selectedYear, selectedMonth - 1, d);
-      const dow = dateObj.getDay();
-      if (dow >= 5) continue; // skip Fri/Sat
-
-      const workingHours = [9, 9, 9, 9, 8][dow] ?? 0;
-      const dateStr = dateObj.toISOString().split('T')[0];
-
-      newData.push({ date: dateStr, workingHours });
-    }
-
-    setData(newData);
+    const abort = new AbortController();
+    fetch(
+      `${API_BASE}/globals/working-days?year=${selectedYear}&month=${String(selectedMonth).padStart(2, '0')}`,
+      { signal: abort.signal },
+    )
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch working days: ${res.status}`);
+        }
+        const d: WorkdayData[] = await res.json();
+        d.sort((a, b) => a.date.localeCompare(b.date));
+        setData(d);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          setData([]);
+        }
+      });
+    return () => abort.abort();
   }, [selectedYear, selectedMonth]);
 
-  const dataMap = React.useMemo(() => {
-    const map = new Map<string, number>();
-    for (const item of data) {
-      map.set(item.date, item.workingHours);
-    }
-    return map;
-  }, [data]);
-
   const totalHours = React.useMemo(
-      () => data.reduce((sum, d) => sum + d.workingHours, 0),
-      [data]
+    () => data.reduce((sum, d) => sum + d.workingHours, 0),
+    [data],
   );
 
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
   const weeks: JSX.Element[] = [];
   let currentWeek: (JSX.Element | null)[] = new Array(5).fill(null);
 
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateObj = new Date(selectedYear, selectedMonth - 1, d);
-    const dateStr = dateObj.toISOString().split('T')[0];
+  for (const item of data) {
+    const dateObj = new Date(item.date);
     const dow = dateObj.getDay();
     if (dow >= 5) continue;
 
     if (dow === 0 && currentWeek.some((c) => c)) {
       weeks.push(
-          <div key={`w-${weeks.length}`} style={{ display: 'contents' }}>
-            {currentWeek.map((c, i) => c ?? <div key={i} />)}
-          </div>
+        <div key={`w-${weeks.length}`} style={{ display: 'contents' }}>
+          {currentWeek.map((c, i) => c ?? <div key={i} />)}
+        </div>,
       );
       currentWeek = new Array(5).fill(null);
     }
-
-    const hours = dataMap.get(dateStr) ?? 0;
+    const hours = item.workingHours;
+    const dateStr = item.date;
+    const dayNum = dateObj.getDate();
     const display = hours === 4 ? '½d' : hours > 0 ? hours : '';
     const isToday = dateStr === todayStr;
 
@@ -100,7 +98,7 @@ export default function WorkdaysTable() {
               fontSize: '14px',
             }}
         >
-          <div style={{ fontWeight: 'bold' }}>{d}</div>
+          <div style={{ fontWeight: 'bold' }}>{dayNum}</div>
           <div style={{ fontSize: '0.8em', color: '#555' }}>{display}</div>
         </div>
     );
