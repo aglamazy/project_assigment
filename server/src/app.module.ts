@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseProvider } from './database.provider';
 import { WorkingDaysModule } from './working-days/working-days.module';
+import { HarvestService } from './harvest/harvest.service';
 
 @Module({
   imports: [
@@ -25,6 +26,6 @@ import { WorkingDaysModule } from './working-days/working-days.module';
     WorkingDaysModule,
   ],
   controllers: [AppController],
-  providers: [AppService, databaseProvider],
+  providers: [AppService, databaseProvider, HarvestService],
 })
 export class AppModule {}
