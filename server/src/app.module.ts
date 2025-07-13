@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { databaseProvider } from './database.provider';
 import { WorkingDaysModule } from './working-days/working-days.module';
 import { AllocationsModule } from './allocations/allocations.module';
+import { GlobalsModule } from './globals/globals.module';
 import { HarvestService } from './harvest/harvest.service';
 import { HarvestController } from './harvest/harvest.controller';
 
@@ -27,6 +28,7 @@ import { HarvestController } from './harvest/harvest.controller';
     }),
     WorkingDaysModule,
     AllocationsModule,
+    GlobalsModule,
   ],
   controllers: [AppController, HarvestController],
   providers: [AppService, databaseProvider, HarvestService],
