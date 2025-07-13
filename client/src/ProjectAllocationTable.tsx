@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import harvestStore, {TeamMember} from './stores/HarvestStore';
+import globalStore from './stores/GlobalStore';
 
 interface Allocation {
     id: string;
@@ -76,6 +77,26 @@ export default function ProjectAllocationTable() {
         allocations.forEach((a) => set.add(a.team_name));
         return Array.from(set).sort();
     }, [allocations]);
+
+    const [workingDays, setWorkingDays] = useState<number[]>([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        globalStore
+            .getWorkingDays(year, month)
+            .then(() => {
+                if (!cancelled) setWorkingDays([...globalStore.working_days]);
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    console.error(err);
+                    setWorkingDays([]);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [year, month]);
 
     const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -201,7 +222,7 @@ export default function ProjectAllocationTable() {
                     </tr>
                     </thead>
                     <tbody>
-                    {Array.from({length: daysInMonth}, (_, i) => i + 1).map((d) => {
+                    {globalStore.working_days.map((d) => {
                         const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                         return (
                             <tr key={d}>
