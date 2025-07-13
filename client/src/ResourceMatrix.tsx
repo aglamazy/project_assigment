@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import harvestStore, { Project, TeamMember } from './HarvestStore';
+import harvestStore, { Project, TeamMember } from './stores/HarvestStore';
 
 const allocations: Record<string, Record<string, number>> = {
   Alice: { 'Project 1': 40, 'Project 2': 60 },

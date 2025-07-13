@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import harvestStore, { TeamMember } from './HarvestStore';
+import harvestStore, { TeamMember } from './stores/HarvestStore';
 
 interface Allocation {
   id: string;
