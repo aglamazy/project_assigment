@@ -70,7 +70,7 @@ export default function ResourceMatrix() {
 
   return (
     <div>
-      <h2>Resource Allocation Matrix</h2>
+      <center><h2>Resource Allocation Matrix</h2></center>
       <table style={tableStyle}>
         <thead>
           <tr>

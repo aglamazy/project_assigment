@@ -1,20 +1,15 @@
 const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
 
-export interface Workday {
-  date: string;
-  workingHours: number;
-}
-
 class GlobalStore {
   working_days: number[] = [];
-  private cache: Map<string, Workday[]> = new Map();
-  private pending: Map<string, Promise<Workday[]>> = new Map();
+  private cache: Map<string, number[]> = new Map();
+  private pending: Map<string, Promise<number[]>> = new Map();
 
-  async getWorkingDays(year: number, month: number): Promise<Workday[]> {
+  async getWorkingDays(year: number, month: number): Promise<number[]> {
     const key = `${year}-${String(month).padStart(2, '0')}`;
     if (this.cache.has(key)) {
       const data = this.cache.get(key)!;
-      this.working_days = data.map((d) => parseInt(d.date.slice(-2), 10));
+      this.working_days = data;
       return Promise.resolve(data);
     }
     if (this.pending.has(key)) {
@@ -27,11 +22,14 @@ class GlobalStore {
         if (!res.ok) {
           throw new Error(`Failed to fetch working days: ${res.status}`);
         }
-        const data: Workday[] = await res.json();
-        data.sort((a, b) => a.date.localeCompare(b.date));
+        const data: number[] = (await res.json()).workingDays;
+        console.log("DATA:", data);
+        // data.sort((a, b) => a.date.localeCompare(b.date));
         this.cache.set(key, data);
-        this.working_days = data.map((d) => parseInt(d.date.slice(-2), 10));
+        this.working_days = data;
+            // data.map((d) => parseInt(d.date.slice(-2), 10));
         this.pending.delete(key);
+        console.log("RET", data);
         return data;
       })
       .catch((err) => {

@@ -6,7 +6,7 @@ import globalStore from './stores/GlobalStore';
 interface Allocation {
     id: string;
     team_name: string;
-    date: string; // YYYY-MM-DD
+    date: string;
     hours: number;
 }
 
@@ -222,7 +222,7 @@ export default function ProjectAllocationTable() {
                     </tr>
                     </thead>
                     <tbody>
-                    {globalStore.working_days.map((d) => {
+                    {workingDays.map((d) => {
                         const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                         return (
                             <tr key={d}>
