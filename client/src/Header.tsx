@@ -4,8 +4,10 @@ const headerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  background: '#f8f8f8',
+  background: 'linear-gradient(to right, #00c6ff, #0072ff)',
   padding: '10px 20px',
+  minHeight: '64px',
+  color: '#fff',
 };
 
 const navStyle: React.CSSProperties = {
@@ -14,6 +16,7 @@ const navStyle: React.CSSProperties = {
   gap: '1rem',
   margin: 0,
   padding: 0,
+  color: '#fff',
 };
 
 const logoStyle: React.CSSProperties = {
