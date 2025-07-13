@@ -18,7 +18,8 @@
     "typeorm": "^0.3.17",
     "uuid": "^9.0.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.5.0"
+    "rxjs": "^7.5.0",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
