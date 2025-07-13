@@ -12,5 +12,6 @@ export const API_ENDPOINTS = {
   },
   DATA: {
     PROJECTS: '/data/projects',
+    CLIENTS: '/data/clients'
   },
 };

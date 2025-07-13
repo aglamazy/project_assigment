@@ -7,9 +7,13 @@ export class HarvestController {
     }
 
     @Get('projects')
-    getProjects(@Query('month') month?: string) {
-        const monthNum = month ? parseInt(month, 10) : new Date().getMonth() + 1;
-        return [{id: 1, name: "Dimri"}, {id: 2, name: "Magen"}];
-        // this.service.getProjects(monthNum);
+    getProjects() {
+        return this.service.getProjects();
     }
+
+    @Get('clients')
+    getClients() {
+        return this.service.getClients();
+    }
+
 }
