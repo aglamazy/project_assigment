@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import harvestStore, { TeamMember } from './HarvestStore';
 
 interface Allocation {
   id: string;
@@ -16,7 +17,8 @@ export default function ProjectAllocationTable() {
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [formDev, setFormDev] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [formDay, setFormDay] = useState(1);
   const [formHours, setFormHours] = useState(0);
 
@@ -38,6 +40,13 @@ export default function ProjectAllocationTable() {
   const years = useMemo(() => {
     return Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   }, [now]);
+
+  useEffect(() => {
+    harvestStore
+      .getTeamMembers()
+      .then(setTeamMembers)
+      .catch(() => setTeamMembers([]));
+  }, []);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -88,7 +97,7 @@ export default function ProjectAllocationTable() {
 
   function openModal(day: number) {
     setFormDay(day);
-    setFormDev('');
+    setSelectedMember('');
     setFormHours(0);
     setShowModal(true);
   }
@@ -99,7 +108,7 @@ export default function ProjectAllocationTable() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        team_name: formDev,
+        team_name: selectedMember,
         project_name: projectName,
         date,
         hours: formHours,
@@ -220,12 +229,18 @@ export default function ProjectAllocationTable() {
             <div style={{ marginBottom: '8px' }}>
               <label>
                 Developer
-                <input
-                  type="text"
-                  value={formDev}
-                  onChange={(e) => setFormDev(e.target.value)}
+                <select
+                  value={selectedMember}
+                  onChange={(e) => setSelectedMember(e.target.value)}
                   style={{ marginLeft: '8px' }}
-                />
+                >
+                  <option value="">Select...</option>
+                  {teamMembers.map((m) => (
+                    <option key={m.id} value={m.name}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
             <div style={{ marginBottom: '8px' }}>
