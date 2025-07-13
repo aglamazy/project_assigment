@@ -17,6 +17,7 @@ export default function ProjectAllocationTable() {
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
   const [selectedMember, setSelectedMember] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [formDay, setFormDay] = useState(1);
@@ -79,10 +80,10 @@ export default function ProjectAllocationTable() {
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const map = useMemo(() => {
-    const m: Record<string, Record<string, number>> = {};
+    const m: Record<string, Record<string, Allocation>> = {};
     allocations.forEach((a) => {
       if (!m[a.date]) m[a.date] = {};
-      m[a.date][a.team_name] = a.hours;
+      m[a.date][a.team_name] = a;
     });
     return m;
   }, [allocations]);
@@ -95,17 +96,30 @@ export default function ProjectAllocationTable() {
     );
   }, [devs, allocations]);
 
-  function openModal(day: number) {
+  function openModal(day: number, dev?: string) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const existing = dev ? map[date]?.[dev] : undefined;
     setFormDay(day);
-    setSelectedMember('');
-    setFormHours(0);
+    if (existing) {
+      setEditingAllocation(existing);
+      setSelectedMember(existing.team_name);
+      setFormHours(existing.hours);
+    } else {
+      setEditingAllocation(null);
+      setSelectedMember(dev || '');
+      setFormHours(0);
+    }
     setShowModal(true);
   }
 
   function saveAllocation() {
     const date = `${year}-${String(month).padStart(2, '0')}-${String(formDay).padStart(2, '0')}`;
-    fetch(`${API_BASE}/allocations`, {
-      method: 'POST',
+    const url = editingAllocation
+      ? `${API_BASE}/allocations/${editingAllocation.id}`
+      : `${API_BASE}/allocations`;
+    const method = editingAllocation ? 'PUT' : 'POST';
+    fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         team_name: selectedMember,
@@ -119,6 +133,7 @@ export default function ProjectAllocationTable() {
       })
       .then(() => {
         setShowModal(false);
+        setEditingAllocation(null);
         // refresh
         return fetch(
           `${API_BASE}/allocations?project=${encodeURIComponent(projectName)}&year=${year}&month=${month}`,
@@ -190,8 +205,12 @@ export default function ProjectAllocationTable() {
               <tr key={d}>
                 <td style={cellStyle}>{d}</td>
                 {devs.map((dev) => (
-                  <td key={dev} style={cellStyle}>
-                    {map[date]?.[dev] ?? ''}
+                  <td
+                    key={dev}
+                    style={{ ...cellStyle, cursor: 'pointer' }}
+                    onClick={() => openModal(d, dev)}
+                  >
+                    {map[date]?.[dev]?.hours ?? ''}
                   </td>
                 ))}
               </tr>
@@ -225,7 +244,7 @@ export default function ProjectAllocationTable() {
           }}
         >
           <div style={{ background: '#fff', padding: '20px', minWidth: '300px' }}>
-            <h3>Add Allocation</h3>
+            <h3>{editingAllocation ? 'Edit Allocation' : 'Add Allocation'}</h3>
             <div style={{ marginBottom: '8px' }}>
               <label>
                 Developer
@@ -268,7 +287,14 @@ export default function ProjectAllocationTable() {
               </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button onClick={() => setShowModal(false)}>Cancel</button>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingAllocation(null);
+                }}
+              >
+                Cancel
+              </button>
               <button onClick={saveAllocation}>Save</button>
             </div>
           </div>
