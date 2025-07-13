@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import harvestStore, { Project } from './HarvestStore';
 
 const developers = ['Alice', 'Bob', 'Charlie'];
-const projects = ['Project 1', 'Project 2'];
 
 const allocations: Record<string, Record<string, number>> = {
   Alice: { 'Project 1': 40, 'Project 2': 60 },
@@ -10,12 +10,27 @@ const allocations: Record<string, Record<string, number>> = {
 };
 
 export default function ResourceMatrix() {
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    harvestStore.getProjects().then(setProjects).catch(() => {
+      setProjects([]);
+    });
+  }, []);
+
+  const projectNames = projects.map((p) => p.name);
   const totalsPerDeveloper = developers.map((dev) => {
-    return projects.reduce((sum, proj) => sum + (allocations[dev]?.[proj] || 0), 0);
+    return projectNames.reduce(
+      (sum, proj) => sum + (allocations[dev]?.[proj] || 0),
+      0,
+    );
   });
 
-  const totalsPerProject = projects.map((proj) => {
-    return developers.reduce((sum, dev) => sum + (allocations[dev]?.[proj] || 0), 0);
+  const totalsPerProject = projectNames.map((proj) => {
+    return developers.reduce(
+      (sum, dev) => sum + (allocations[dev]?.[proj] || 0),
+      0,
+    );
   });
 
   const grandTotal = totalsPerProject.reduce((a, b) => a + b, 0);
@@ -44,7 +59,7 @@ export default function ResourceMatrix() {
         <thead>
           <tr>
             <th style={cellStyle}></th>
-            {projects.map((project) => (
+            {projectNames.map((project) => (
               <th key={project} style={cellStyle}>{project}</th>
             ))}
             <th style={totalStyle}>Total</th>
@@ -54,8 +69,8 @@ export default function ResourceMatrix() {
           {developers.map((dev, idx) => (
             <tr key={dev}>
               <td style={cellStyle}>{dev}</td>
-              {projects.map((proj) => (
-                <td key={proj} style={cellStyle}>{allocations[dev][proj]}</td>
+              {projectNames.map((proj) => (
+                <td key={proj} style={cellStyle}>{allocations[dev]?.[proj] || 0}</td>
               ))}
               <td style={totalStyle}>{totalsPerDeveloper[idx]}</td>
             </tr>
