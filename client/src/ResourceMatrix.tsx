@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import harvestStore, { Project } from './HarvestStore';
-
-const developers = ['Alice', 'Bob', 'Charlie'];
+import harvestStore, { Project, TeamMember } from './HarvestStore';
 
 const allocations: Record<string, Record<string, number>> = {
   Alice: { 'Project 1': 40, 'Project 2': 60 },
@@ -11,12 +9,22 @@ const allocations: Record<string, Record<string, number>> = {
 
 export default function ResourceMatrix() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
 
   useEffect(() => {
     harvestStore.getProjects().then(setProjects).catch(() => {
       setProjects([]);
     });
+    harvestStore.getTeamMembers().then(setTeamMembers).catch(() => {
+      setTeamMembers([]);
+    });
   }, []);
+
+  if (teamMembers === null) {
+    return <div>Loading...</div>;
+  }
+
+  const developers = teamMembers.map((m) => m.name);
 
   const projectNames = projects.map((p) => p.name);
   const totalsPerDeveloper = developers.map((dev) => {
