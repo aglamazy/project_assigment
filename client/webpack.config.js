@@ -26,7 +26,7 @@ module.exports = {
   },
   plugins: [
     new webpack.EnvironmentPlugin({
-      SERVER_URL: 'http://localhost:3001',
+      SERVER_URL: 'http://localhost:3000',
     }),
   ],
   devServer: {

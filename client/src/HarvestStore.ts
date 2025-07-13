@@ -13,7 +13,7 @@ class HarvestStore {
     if (this.pending) {
       return this.pending;
     }
-    this.pending = fetch(`${API_BASE}/api/harvest/projects`)
+    this.pending = fetch(`${API_BASE}/harvest/projects`)
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch projects: ${res.status}`);

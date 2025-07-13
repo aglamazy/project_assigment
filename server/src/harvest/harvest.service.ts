@@ -1,70 +1,54 @@
-import { Injectable } from '@nestjs/common';
-import Axios from 'axios';
-import { API_ENDPOINTS } from '../constants/db.constants';
-import { IPlanActualProject, IProjectsData } from '../types';
+import {Injectable, Logger} from '@nestjs/common';
+import axios from 'axios';
+import {ConfigService} from '@nestjs/config';
+import Redis from 'ioredis';
 
 @Injectable()
 export class HarvestService {
-  private _token?: string;
-  private headers?: { Authorization: string };
+    private readonly logger = new Logger(HarvestService.name);
+    private readonly redis: Redis;
+    private readonly headers: Record<string, string>;
 
-  static async login(body: { userName: string; password: string }): Promise<string> {
-    const url = `${API_ENDPOINTS.BASE_URL}${API_ENDPOINTS.LOGIN.LOGIN}`;
-    const result = await Axios.post(url, body);
-    return result.data.token;
-  }
+    constructor(private readonly configService: ConfigService) {
+        const token = this.configService.get<string>('HARVEST_API_TOKEN');
+        const accountId = this.configService.get<string>('HARVEST_ACCOUNT_ID');
 
-  static async googleLogin(googleToken: string): Promise<string> {
-    const url = `${API_ENDPOINTS.BASE_URL}${API_ENDPOINTS.LOGIN.GOOGLE}`;
-    const result = await Axios.post(url, { googleToken });
-    return result.data.token;
-  }
+        this.headers = {
+            Authorization: `Bearer ${token}`,
+            'Harvest-Account-ID': accountId,
+            'Content-Type': 'application/json',
+        };
 
-  set token(value: string) {
-    this._token = value;
-    this.headers = {
-      Authorization: `Bearer ${this._token}`,
-    };
-  }
-
-  protected get(endpoint: string, params: any = {}) {
-    const url = `${API_ENDPOINTS.BASE_URL}${endpoint}`;
-    return Axios.get(url, {
-      headers: this.headers,
-      params,
-    });
-  }
-
-  async getTimeLogged(year: number, month: number) {
-    const result = await this.get(API_ENDPOINTS.WORK.TIME_LOGGED_BY_DATES, { year, month });
-    return result.data;
-  }
-
-  async getMaintenance(year: number, month: number) {
-    const result = await this.get(API_ENDPOINTS.WORK.MAINTENANCE, { year, month });
-    return result.data.projects;
-  }
-
-  async getPlanVsActual(year: number, month: number): Promise<IPlanActualProject[]> {
-    const result = await this.get(API_ENDPOINTS.WORK.PLANvsACTUAL, { year, month });
-    return result.data.projects;
-  }
-
-  async checkToken(token: string): Promise<boolean> {
-    this._token = token;
-    try {
-      await this.get(API_ENDPOINTS.LOGIN.CHECK_TOKEN);
-      return true;
-    } catch {
-      return false;
+        this.redis = new Redis(); // or inject if using @nestjs/redis module
     }
-  }
 
-  async getProjects(month: number): Promise<IProjectsData> {
-    const now = new Date();
-    const result = await this.get(API_ENDPOINTS.DATA.PROJECTS, { month, year: now.getFullYear() });
-    return {
-      projects: result.data,
-    };
-  }
+    async fetchTeammates(): Promise<{ id: string; name: string; email: string }[]> {
+        const cacheKey = 'teammates';
+
+        try {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+
+            const response = await axios.get('https://api.harvestapp.com/v2/users', {
+                headers: this.headers,
+            });
+
+            const teammates = response.data.users
+                .filter((user: any) => user.is_active)
+                .map((user: any) => ({
+                    id: user.id,
+                    name: `${user.first_name} ${user.last_name}`,
+                    email: user.email,
+                }));
+
+            await this.redis.set(cacheKey, JSON.stringify(teammates), 'EX', 3600);
+            this.logger.log(`Fetched and cached ${teammates.length} teammates.`);
+            return teammates;
+        } catch (error: any) {
+            this.logger.error('Error fetching teammates', error.response?.data || error.message);
+            throw error;
+        }
+    }
 }
