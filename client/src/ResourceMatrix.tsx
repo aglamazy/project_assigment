@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import harvestStore, { Project, TeamMember } from './HarvestStore';
 
 const allocations: Record<string, Record<string, number>> = {
@@ -68,7 +69,9 @@ export default function ResourceMatrix() {
           <tr>
             <th style={cellStyle}></th>
             {projectNames.map((project) => (
-              <th key={project} style={cellStyle}>{project}</th>
+              <th key={project} style={cellStyle}>
+                <Link to={`/project/${encodeURIComponent(project)}`}>{project}</Link>
+              </th>
             ))}
             <th style={totalStyle}>Total</th>
           </tr>

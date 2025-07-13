@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 interface Allocation {
   id: string;
@@ -7,13 +8,9 @@ interface Allocation {
   hours: number;
 }
 
-interface Props {
-  projectName: string;
-}
-
 const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
-
-export default function ProjectAllocationTable({ projectName }: Props) {
+export default function ProjectAllocationTable() {
+  const { projectName = '' } = useParams<{ projectName?: string }>();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
