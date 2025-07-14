@@ -231,7 +231,9 @@ export default function ProjectAllocationTable() {
 
     return (
         <>
-            <center><h1>Project Allocation Table</h1></center>
+            <center>
+                <h1>{projectName} assignments</h1>
+            </center>
             <div>
                 <div style={{display: 'flex', gap: '8px', marginBottom: '8px'}}>
                     <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
