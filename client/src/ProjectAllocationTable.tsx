@@ -240,13 +240,13 @@ export default function ProjectAllocationTable() {
                     <button onClick={() => openModal(1)}>+ Add Allocation</button>
                 </div>
 
-                {allocations.length === 0 && (
+                {allocations.length === 0 ? (
                     <div style={{ marginBottom: '8px', textAlign: 'center', fontWeight: 'bold' }}>
                         דף הקצאת משאבים
                         <br />
-                        ניתן להקצות משאב ליום בודד, טווח תאריכים, או שנה קדימה
+                        ניתן להקצות משאב ליום בודד או טווח תאריכים
                     </div>
-                )}
+                ) : (
 
                 <table style={tableStyle}>
                     <thead>
@@ -289,7 +289,7 @@ export default function ProjectAllocationTable() {
                     </tr>
                     </tfoot>
                 </table>
-
+                )}
                 {showModal && (
                     <div
                         style={{
