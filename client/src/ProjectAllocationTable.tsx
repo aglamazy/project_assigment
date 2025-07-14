@@ -21,6 +21,10 @@ export default function ProjectAllocationTable() {
     const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
     const [selectedMember, setSelectedMember] = useState('');
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const sortedTeamMembers = useMemo(
+        () => [...teamMembers].sort((a, b) => a.name.localeCompare(b.name)),
+        [teamMembers],
+    );
     const [formDay, setFormDay] = useState(1);
     const [formHours, setFormHours] = useState(8);
     const [fullDay, setFullDay] = useState(true);
@@ -123,17 +127,24 @@ export default function ProjectAllocationTable() {
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const existing = dev ? map[date]?.[dev] : undefined;
         setFormDay(day);
-        setEndDay('');
         if (existing) {
             setEditingAllocation(existing);
             setSelectedMember(existing.team_name);
             setFormHours(existing.hours);
             setFullDay(existing.hours >= 8);
+            setEndDay('');
         } else {
             setEditingAllocation(null);
             setSelectedMember(dev || '');
             setFormHours(8);
             setFullDay(true);
+            const endDate = new Date(year, month - 1, day);
+            endDate.setMonth(endDate.getMonth() + 1);
+            const defaultEnd =
+                endDate.getFullYear() !== year || endDate.getMonth() !== month - 1
+                    ? daysInMonth
+                    : endDate.getDate();
+            setEndDay(defaultEnd);
         }
         setShowModal(true);
     }
@@ -237,7 +248,7 @@ export default function ProjectAllocationTable() {
                             </option>
                         ))}
                     </select>
-                    <button onClick={() => openModal(1)}>+ Add Allocation</button>
+                    <button onClick={() => openModal(Math.min(now.getDate(), daysInMonth))}>+ Add Allocation</button>
                 </div>
 
                 {allocations.length === 0 ? (
@@ -309,18 +320,17 @@ export default function ProjectAllocationTable() {
                             <div style={{marginBottom: '8px'}}>
                                 <label>
                                     Developer
-                                    <select
+                                    <input
+                                        list="team-members-list"
                                         value={selectedMember}
                                         onChange={(e) => setSelectedMember(e.target.value)}
                                         style={{marginLeft: '8px'}}
-                                    >
-                                        <option value="">Select...</option>
-                                        {teamMembers.map((m) => (
-                                            <option key={m.id} value={m.name}>
-                                                {m.name}
-                                            </option>
+                                    />
+                                    <datalist id="team-members-list">
+                                        {sortedTeamMembers.map((m) => (
+                                            <option key={m.id} value={m.name} />
                                         ))}
-                                    </select>
+                                    </datalist>
                                 </label>
                             </div>
                             <div style={{marginBottom: '8px'}}>
