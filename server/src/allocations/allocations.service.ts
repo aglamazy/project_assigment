@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Allocation } from './allocation.entity';
 import { CreateAllocationDto } from './dto/create-allocation.dto';
 import { UpdateAllocationDto } from './dto/update-allocation.dto';
@@ -19,6 +19,18 @@ export class AllocationsService {
 
   findAll() {
     return this.repo.find();
+  }
+
+  findByProjectAndMonth(project: string, year: number, month: number) {
+    const start = new Date(year, month - 1, 1).toISOString().slice(0, 10);
+    const end = new Date(year, month, 0).toISOString().slice(0, 10);
+    return this.repo.find({
+      where: {
+        project_name: project,
+        date: Between(start, end),
+      },
+      order: { date: 'ASC' },
+    });
   }
 
   async findOne(id: string) {

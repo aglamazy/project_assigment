@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AllocationsService } from './allocations.service';
 import { CreateAllocationDto } from './dto/create-allocation.dto';
 import { UpdateAllocationDto } from './dto/update-allocation.dto';
@@ -9,7 +9,19 @@ export class AllocationsController {
   constructor(private readonly service: AllocationsService) {}
 
   @Get()
-  findAll() {
+  findAll(
+    @Query('project') project?: string,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    if (project && year && month) {
+      const y = parseInt(year, 10);
+      const m = parseInt(month, 10);
+      if (isNaN(y) || isNaN(m)) {
+        throw new BadRequestException('Invalid year or month');
+      }
+      return this.service.findByProjectAndMonth(project, y, m);
+    }
     return this.service.findAll();
   }
 
