@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const headerStyle: React.CSSProperties = {
   display: 'flex',
@@ -26,7 +27,13 @@ const logoStyle: React.CSSProperties = {
 export default function Header() {
   return (
     <header style={headerStyle}>
-      <img src="/one-digital.webp" alt="One Digital logo" style={logoStyle} />
+      <Link to="/">
+        <img
+          src="/one-digital.webp"
+          alt="One Digital logo"
+          style={logoStyle}
+        />
+      </Link>
       <nav>
         <ul style={navStyle}>
           <li>Monthly plan</li>
