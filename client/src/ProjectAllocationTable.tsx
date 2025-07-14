@@ -22,7 +22,9 @@ export default function ProjectAllocationTable() {
     const [selectedMember, setSelectedMember] = useState('');
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [formDay, setFormDay] = useState(1);
-    const [formHours, setFormHours] = useState(0);
+    const [formHours, setFormHours] = useState(8);
+    const [fullDay, setFullDay] = useState(true);
+    const [endDay, setEndDay] = useState<number | ''>('');
 
     const monthNames = [
         'January',
@@ -121,41 +123,69 @@ export default function ProjectAllocationTable() {
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const existing = dev ? map[date]?.[dev] : undefined;
         setFormDay(day);
+        setEndDay('');
         if (existing) {
             setEditingAllocation(existing);
             setSelectedMember(existing.team_name);
             setFormHours(existing.hours);
+            setFullDay(existing.hours >= 8);
         } else {
             setEditingAllocation(null);
             setSelectedMember(dev || '');
-            setFormHours(0);
+            setFormHours(8);
+            setFullDay(true);
         }
         setShowModal(true);
     }
 
     function saveAllocation() {
-        const date = `${year}-${String(month).padStart(2, '0')}-${String(formDay).padStart(2, '0')}`;
-        const url = editingAllocation
-            ? `${API_BASE}/allocations/${editingAllocation.id}`
-            : `${API_BASE}/allocations`;
-        const method = editingAllocation ? 'PUT' : 'POST';
-        fetch(url, {
-            method,
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                team_name: selectedMember,
-                project_name: projectName,
-                date,
-                hours: formHours,
-            }),
-        })
-            .then((res) => {
-                if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
+        const start = formDay;
+        const end = endDay === '' ? formDay : Number(endDay);
+        const hours = fullDay ? 8 : formHours;
+
+        const requests: Promise<Response>[] = [];
+
+        if (editingAllocation) {
+            const date = `${year}-${String(month).padStart(2, '0')}-${String(formDay).padStart(2, '0')}`;
+            requests.push(
+                fetch(`${API_BASE}/allocations/${editingAllocation.id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        team_name: selectedMember,
+                        project_name: projectName,
+                        date,
+                        hours,
+                    }),
+                }),
+            );
+        } else {
+            for (let d = start; d <= end; d++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                requests.push(
+                    fetch(`${API_BASE}/allocations`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            team_name: selectedMember,
+                            project_name: projectName,
+                            date,
+                            hours,
+                        }),
+                    }),
+                );
+            }
+        }
+
+        Promise.all(requests)
+            .then((responses) => {
+                for (const res of responses) {
+                    if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
+                }
             })
             .then(() => {
                 setShowModal(false);
                 setEditingAllocation(null);
-                // refresh
                 return fetch(
                     `${API_BASE}/allocations?project=${encodeURIComponent(projectName)}&year=${year}&month=${month}`,
                 );
@@ -300,15 +330,43 @@ export default function ProjectAllocationTable() {
                             </div>
                             <div style={{marginBottom: '8px'}}>
                                 <label>
-                                    Hours
+                                    Full Day
                                     <input
-                                        type="number"
-                                        value={formHours}
-                                        onChange={(e) => setFormHours(Number(e.target.value))}
+                                        type="checkbox"
+                                        checked={fullDay}
+                                        onChange={(e) => setFullDay(e.target.checked)}
                                         style={{marginLeft: '8px'}}
                                     />
                                 </label>
                             </div>
+                            {!fullDay && (
+                                <>
+                                    <div style={{marginBottom: '8px'}}>
+                                        <label>
+                                            Hours
+                                            <input
+                                                type="number"
+                                                value={formHours}
+                                                onChange={(e) => setFormHours(Number(e.target.value))}
+                                                style={{marginLeft: '8px'}}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div style={{marginBottom: '8px'}}>
+                                        <label>
+                                            End Day
+                                            <input
+                                                type="number"
+                                                min={formDay}
+                                                max={daysInMonth}
+                                                value={endDay}
+                                                onChange={(e) => setEndDay(e.target.value === '' ? '' : Number(e.target.value))}
+                                                style={{marginLeft: '8px'}}
+                                            />
+                                        </label>
+                                    </div>
+                                </>
+                            )}
                             <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
                                 <button
                                     onClick={() => {
