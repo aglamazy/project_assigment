@@ -27,7 +27,6 @@ export default function ProjectAllocationTable() {
         () => [...teamMembers].sort((a, b) => a.name.localeCompare(b.name)),
         [teamMembers],
     );
-    const [hideEmptyDevs, setHideEmptyDevs] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
@@ -80,19 +79,10 @@ export default function ProjectAllocationTable() {
     }, [projectName, year, month]);
 
     const devs = useMemo(() => {
-        const withAlloc = new Set<string>();
-        allocations.forEach((a) => withAlloc.add(a.team_name));
-        const allNames = sortedTeamMembers.map((m) => m.name);
-        const combined = Array.from(new Set([...allNames, ...withAlloc]));
-        combined.sort((a, b) => {
-            const aHas = withAlloc.has(a);
-            const bHas = withAlloc.has(b);
-            if (aHas && !bHas) return -1;
-            if (!aHas && bHas) return 1;
-            return a.localeCompare(b);
-        });
-        return hideEmptyDevs ? combined.filter((n) => withAlloc.has(n)) : combined;
-    }, [allocations, sortedTeamMembers, hideEmptyDevs]);
+        const set = new Set<string>();
+        allocations.forEach((a) => set.add(a.team_name));
+        return Array.from(set).sort();
+    }, [allocations]);
 
     const [workingDays, setWorkingDays] = useState<number[]>([]);
 
@@ -239,14 +229,6 @@ export default function ProjectAllocationTable() {
                         ))}
                     </select>
                     <button onClick={() => openModal(Math.min(now.getDate(), daysInMonth))}>+ Add Allocation</button>
-                    <label style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-                        <input
-                            type="checkbox"
-                            checked={hideEmptyDevs}
-                            onChange={(e) => setHideEmptyDevs(e.target.checked)}
-                        />
-                        Hide developers with no allocation
-                    </label>
                 </div>
 
                 {allocations.length === 0 ? (
