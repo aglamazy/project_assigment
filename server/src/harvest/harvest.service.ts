@@ -65,8 +65,10 @@ export class HarvestService {
                 {
                     headers: this.headers,
                 });
-
-            const projects = response.data.projects.map(({ id, name }) => ({ id, name }));
+            const excludeNames = ['Hailo.ai'];
+            const projects = response.data.projects
+                .filter(({ name }) => !excludeNames.includes(name))
+                .map(({ id, name }) => ({ id, name }));
 
             await this.redis.set(cacheKey, JSON.stringify(projects), 'EX', 2);
             this.logger.log(`Fetched and cached ${projects.length} projects.`);

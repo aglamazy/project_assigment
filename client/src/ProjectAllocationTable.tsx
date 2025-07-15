@@ -166,7 +166,7 @@ export default function ProjectAllocationTable() {
                 project_name: projectName,
                 start_date: startDate,
                 end_date: endDate,
-                hours: 8,
+                hours: 9,
             }),
         })
             .then((res) => {
