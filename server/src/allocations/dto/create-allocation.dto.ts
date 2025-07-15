@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateAllocationDto {
   @IsString()
@@ -10,8 +10,11 @@ export class CreateAllocationDto {
   project_name: string;
 
   @IsDateString()
-  date: string;
+  start_date: string;
 
+  @IsDateString()
+  end_date: string;
+  @IsOptional()
   @IsNumber()
-  hours: number;
+  hours?: number;
 }

@@ -6,8 +6,10 @@ import globalStore from './stores/GlobalStore';
 interface Allocation {
     id: string;
     team_name: string;
-    date: string;
-    hours: number;
+    project_name: string;
+    start_date: string;
+    end_date: string;
+    hours: number | null;
 }
 
 const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
@@ -104,22 +106,35 @@ export default function ProjectAllocationTable() {
 
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    const map = useMemo(() => {
-        const m: Record<string, Record<string, Allocation>> = {};
+    const expanded = useMemo(() => {
+        const arr: (Allocation & { date: string })[] = [];
         allocations.forEach((a) => {
+            const start = new Date(a.start_date);
+            const end = new Date(a.end_date);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const date = d.toISOString().slice(0, 10);
+                arr.push({ ...a, date });
+            }
+        });
+        return arr;
+    }, [allocations]);
+
+    const map = useMemo(() => {
+        const m: Record<string, Record<string, Allocation & { date: string }>> = {};
+        expanded.forEach((a) => {
             if (!m[a.date]) m[a.date] = {};
             m[a.date][a.team_name] = a;
         });
         return m;
-    }, [allocations]);
+    }, [expanded]);
 
     const totals = useMemo(() => {
         return devs.map((dev) =>
-            allocations
+            expanded
                 .filter((a) => a.team_name === dev)
-                .reduce((sum, a) => sum + a.hours, 0),
+                .reduce((sum, a) => sum + (a.hours ?? 8), 0),
         );
-    }, [devs, allocations]);
+    }, [devs, expanded]);
 
     function openModal(day: number, dev?: string) {
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -127,8 +142,8 @@ export default function ProjectAllocationTable() {
         if (existing) {
             setEditingAllocation(existing);
             setSelectedMember(existing.team_name);
-            setStartDate(existing.date);
-            setEndDate(existing.date);
+            setStartDate(existing.start_date);
+            setEndDate(existing.end_date);
         } else {
             setEditingAllocation(null);
             setSelectedMember(dev || '');
@@ -139,46 +154,23 @@ export default function ProjectAllocationTable() {
     }
 
     function saveAllocation() {
-        const requests: Promise<Response>[] = [];
-
-        if (editingAllocation) {
-            requests.push(
-                fetch(`${API_BASE}/allocations/${editingAllocation.id}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        team_name: selectedMember,
-                        project_name: projectName,
-                        date: startDate,
-                        hours: 8,
-                    }),
-                }),
-            );
-        } else {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const date = d.toISOString().slice(0, 10);
-                requests.push(
-                    fetch(`${API_BASE}/allocations`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            team_name: selectedMember,
-                            project_name: projectName,
-                            date,
-                            hours: 8,
-                        }),
-                    }),
-                );
-            }
-        }
-
-        Promise.all(requests)
-            .then((responses) => {
-                for (const res of responses) {
-                    if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
-                }
+        const url = editingAllocation
+            ? `${API_BASE}/allocations/${editingAllocation.id}`
+            : `${API_BASE}/allocations`;
+        const method = editingAllocation ? 'PUT' : 'POST';
+        fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                team_name: selectedMember,
+                project_name: projectName,
+                start_date: startDate,
+                end_date: endDate,
+                hours: 8,
+            }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
             })
             .then(() => {
                 setShowModal(false);
