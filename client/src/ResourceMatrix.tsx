@@ -13,6 +13,7 @@ export default function ResourceMatrix() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
   const navigate = useNavigate();
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+  const [hideEmptyProjects, setHideEmptyProjects] = useState(false);
 
   useEffect(() => {
     harvestStore.getProjects().then(setProjects).catch(() => {
@@ -29,7 +30,27 @@ export default function ResourceMatrix() {
 
   const developers = teamMembers.map((m) => m.name);
 
-  const projectNames = projects.map((p) => p.name);
+  const allProjectNames = projects.map((p) => p.name);
+  const totalsByProject: Record<string, number> = {};
+  allProjectNames.forEach((proj) => {
+    totalsByProject[proj] = developers.reduce(
+      (sum, dev) => sum + (allocations[dev]?.[proj] || 0),
+      0,
+    );
+  });
+
+  const sortedProjectNames = [...allProjectNames].sort((a, b) => {
+    const aEmpty = totalsByProject[a] === 0;
+    const bEmpty = totalsByProject[b] === 0;
+    if (aEmpty && !bEmpty) return 1;
+    if (!aEmpty && bEmpty) return -1;
+    return a.localeCompare(b);
+  });
+
+  const projectNames = hideEmptyProjects
+    ? sortedProjectNames.filter((p) => totalsByProject[p] !== 0)
+    : sortedProjectNames;
+
   const totalsPerDeveloper = developers.map((dev) => {
     return projectNames.reduce(
       (sum, proj) => sum + (allocations[dev]?.[proj] || 0),
@@ -37,12 +58,7 @@ export default function ResourceMatrix() {
     );
   });
 
-  const totalsPerProject = projectNames.map((proj) => {
-    return developers.reduce(
-      (sum, dev) => sum + (allocations[dev]?.[proj] || 0),
-      0,
-    );
-  });
+  const totalsPerProject = projectNames.map((proj) => totalsByProject[proj]);
 
   const grandTotal = totalsPerProject.reduce((a, b) => a + b, 0);
 
@@ -71,6 +87,17 @@ export default function ResourceMatrix() {
   return (
     <div>
       <center><h2>Resource Allocation Matrix</h2></center>
+      <div style={{ marginBottom: '8px' }}>
+        <label>
+          <input
+            type="checkbox"
+            checked={hideEmptyProjects}
+            onChange={(e) => setHideEmptyProjects(e.target.checked)}
+            style={{ marginRight: '4px' }}
+          />
+          Hide projects with no allocation
+        </label>
+      </div>
       <table style={tableStyle}>
         <thead>
           <tr>
