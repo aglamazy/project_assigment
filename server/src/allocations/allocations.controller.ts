@@ -13,7 +13,15 @@ export class AllocationsController {
     @Query('project') project?: string,
     @Query('year') year?: string,
     @Query('month') month?: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
   ) {
+    if (start && end) {
+      if (project) {
+        return this.service.findByProjectAndDateRange(project, start, end);
+      }
+      return this.service.findByDateRange(start, end);
+    }
     if (year && month) {
       const y = parseInt(year, 10);
       const m = parseInt(month, 10);

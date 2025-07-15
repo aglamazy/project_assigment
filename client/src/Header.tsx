@@ -36,8 +36,16 @@ export default function Header() {
       </Link>
       <nav>
         <ul style={navStyle}>
-          <li>Monthly plan</li>
-          <li>Weekly plan</li>
+          <li>
+            <Link to="/" style={{ color: '#fff', textDecoration: 'none' }}>
+              Monthly plan
+            </Link>
+          </li>
+          <li>
+            <Link to="/weekly" style={{ color: '#fff', textDecoration: 'none' }}>
+              Weekly plan
+            </Link>
+          </li>
           <li>Harvest</li>
         </ul>
       </nav>
