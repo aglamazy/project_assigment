@@ -12,10 +12,12 @@ export class Allocation {
   project_name: string;
 
   @Column({ type: 'date' })
-  date: string;
+  start_date: string;
 
-  @Column({ type: 'decimal', precision: 4, scale: 2 })
-  hours: number;
+  @Column({ type: 'date' })
+  end_date: string;
+  @Column({ type: 'decimal', precision: 4, scale: 2, nullable: true })
+  hours: number | null;
 
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
