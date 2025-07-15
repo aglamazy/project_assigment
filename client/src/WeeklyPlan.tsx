@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import harvestStore, { Project, TeamMember } from './stores/HarvestStore';
+import harvestStore, { TeamMember } from './stores/HarvestStore';
 
 interface Allocation {
   id: string;
@@ -39,15 +38,11 @@ function getWeekStartEnd(value: string) {
 }
 
 export default function WeeklyPlan() {
-  const [projects, setProjects] = useState<Project[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
   const [selectedWeek, setSelectedWeek] = useState(isoWeekString(new Date()));
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const navigate = useNavigate();
-  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
 
   useEffect(() => {
-    harvestStore.getProjects().then(setProjects).catch(() => setProjects([]));
     harvestStore.getTeamMembers().then(setTeamMembers).catch(() => setTeamMembers([]));
   }, []);
 
@@ -73,42 +68,35 @@ export default function WeeklyPlan() {
 
   if (teamMembers === null) return <div>Loading...</div>;
 
-  const { start, end } = getWeekStartEnd(selectedWeek);
-  const startMs = start.getTime();
-  const endMs = end.getTime();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+  const { start } = getWeekStartEnd(selectedWeek);
+  const weekStart = new Date(start);
+  weekStart.setDate(weekStart.getDate() - 1); // start on Sunday
+  const days = dayNames.map((_, idx) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + idx);
+    return { date: d, key: d.toISOString().slice(0, 10) };
+  });
 
-  const allocationMap: Record<string, Record<string, number>> = {};
+  const dailyMap: Record<string, Record<string, string[]>> = {};
   allocations.forEach((a) => {
     const aStart = new Date(a.start_date).getTime();
     const aEnd = new Date(a.end_date).getTime();
-    const s = Math.max(aStart, startMs);
-    const e = Math.min(aEnd, endMs);
-    if (s > e) return;
-    const days = Math.floor((e - s) / 86400000) + 1;
-    const hours = (a.hours ?? 8) * days;
-    if (!allocationMap[a.team_name]) allocationMap[a.team_name] = {};
-    allocationMap[a.team_name][a.project_name] =
-      (allocationMap[a.team_name][a.project_name] || 0) + hours;
+    days.forEach(({ date, key }) => {
+      const t = date.getTime();
+      if (t >= aStart && t <= aEnd) {
+        if (!dailyMap[a.team_name]) dailyMap[a.team_name] = {};
+        if (!dailyMap[a.team_name][key]) dailyMap[a.team_name][key] = [];
+        if (!dailyMap[a.team_name][key].includes(a.project_name)) {
+          dailyMap[a.team_name][key].push(a.project_name);
+        }
+      }
+    });
   });
 
   const developers = teamMembers
     .map((m) => m.name)
-    .filter((dev) => Object.values(allocationMap[dev] || {}).reduce((s, v) => s + v, 0) > 0);
-
-  const allProjects = projects.map((p) => p.name);
-  const projectNames = allProjects.filter(
-    (proj) => developers.reduce((sum, dev) => sum + (allocationMap[dev]?.[proj] || 0), 0) > 0,
-  );
-
-  const totalsPerProject = projectNames.map((proj) =>
-    developers.reduce((sum, dev) => sum + (allocationMap[dev]?.[proj] || 0), 0),
-  );
-
-  const totalsPerDeveloper = developers.map((dev) =>
-    projectNames.reduce((sum, proj) => sum + (allocationMap[dev]?.[proj] || 0), 0),
-  );
-
-  const grandTotal = totalsPerProject.reduce((a, b) => a + b, 0);
+    .filter((dev) => days.some(({ key }) => (dailyMap[dev]?.[key] || []).length));
 
   const tableStyle: React.CSSProperties = {
     borderCollapse: 'collapse',
@@ -118,15 +106,6 @@ export default function WeeklyPlan() {
     border: '1px solid #ddd',
     padding: '8px',
     textAlign: 'center',
-  };
-  const headerSpanStyle: React.CSSProperties = {
-    textDecoration: 'none',
-    cursor: 'pointer',
-  };
-  const totalStyle: React.CSSProperties = {
-    ...cellStyle,
-    fontWeight: 'bold',
-    background: '#f0f0f0',
   };
 
   return (
@@ -141,44 +120,23 @@ export default function WeeklyPlan() {
         <thead>
           <tr>
             <th style={cellStyle}></th>
-            {projectNames.map((project) => (
-              <th key={project} style={cellStyle}>
-                <span
-                  style={{
-                    ...headerSpanStyle,
-                    color: hoveredProject === project ? '#007bff' : undefined,
-                  }}
-                  onClick={() => navigate(`/project/${encodeURIComponent(project)}`)}
-                  onMouseEnter={() => setHoveredProject(project)}
-                  onMouseLeave={() => setHoveredProject(null)}
-                >
-                  {project}
-                </span>
-              </th>
+            {dayNames.map((d) => (
+              <th key={d} style={cellStyle}>{d}</th>
             ))}
-            <th style={totalStyle}>Total</th>
           </tr>
         </thead>
         <tbody>
-          {developers.map((dev, idx) => (
+          {developers.map((dev) => (
             <tr key={dev}>
               <td style={cellStyle}>{dev}</td>
-              {projectNames.map((proj) => (
-                <td key={proj} style={cellStyle}>{allocationMap[dev]?.[proj] || 0}</td>
+              {days.map(({ key }) => (
+                <td key={key} style={cellStyle}>
+                  {(dailyMap[dev]?.[key] || []).join(', ')}
+                </td>
               ))}
-              <td style={totalStyle}>{totalsPerDeveloper[idx]}</td>
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          <tr>
-            <td style={totalStyle}>Total</td>
-            {totalsPerProject.map((tot, idx) => (
-              <td key={idx} style={totalStyle}>{tot}</td>
-            ))}
-            <td style={totalStyle}>{grandTotal}</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   );
