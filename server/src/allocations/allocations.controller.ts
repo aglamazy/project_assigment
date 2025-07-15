@@ -14,13 +14,16 @@ export class AllocationsController {
     @Query('year') year?: string,
     @Query('month') month?: string,
   ) {
-    if (project && year && month) {
+    if (year && month) {
       const y = parseInt(year, 10);
       const m = parseInt(month, 10);
       if (isNaN(y) || isNaN(m)) {
         throw new BadRequestException('Invalid year or month');
       }
-      return this.service.findByProjectAndMonth(project, y, m);
+      if (project) {
+        return this.service.findByProjectAndMonth(project, y, m);
+      }
+      return this.service.findByMonth(y, m);
     }
     return this.service.findAll();
   }

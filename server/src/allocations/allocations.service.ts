@@ -34,6 +34,18 @@ export class AllocationsService {
     });
   }
 
+  findByMonth(year: number, month: number) {
+    const start = new Date(year, month - 1, 1).toISOString().slice(0, 10);
+    const end = new Date(year, month, 0).toISOString().slice(0, 10);
+    return this.repo.find({
+      where: {
+        start_date: LessThanOrEqual(end),
+        end_date: MoreThanOrEqual(start),
+      },
+      order: { start_date: 'ASC' },
+    });
+  }
+
   async findOne(id: string) {
     const allocation = await this.repo.findOne({ where: { id } });
     if (!allocation) {
