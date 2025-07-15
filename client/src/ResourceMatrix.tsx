@@ -22,6 +22,8 @@ export default function ResourceMatrix() {
     new Date().toISOString().slice(0, 7),
   );
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [showEmptyProjects, setShowEmptyProjects] = useState(true);
+  const [projectSort, setProjectSort] = useState<'alpha' | 'total'>('alpha');
 
   useEffect(() => {
     harvestStore.getProjects().then(setProjects).catch(() => {
@@ -58,9 +60,8 @@ export default function ResourceMatrix() {
     return <div>Loading...</div>;
   }
 
-  const developers = teamMembers.map((m) => m.name);
-
-  const projectNames = projects.map((p) => p.name);
+  const allDevelopers = teamMembers.map((m) => m.name);
+  const allProjects = projects.map((p) => p.name);
   const allocationMap: Record<string, Record<string, number>> = {};
   allocations.forEach((a) => {
     const start = new Date(a.start_date);
@@ -73,19 +74,44 @@ export default function ResourceMatrix() {
       (allocationMap[a.team_name][a.project_name] || 0) + hours;
   });
 
-  const totalsPerDeveloper = developers.map((dev) => {
-    return projectNames.reduce(
-      (sum, proj) => sum + (allocationMap[dev]?.[proj] || 0),
+  const developers = allDevelopers.filter((dev) => {
+    const totals = Object.values(allocationMap[dev] || {}).reduce(
+      (s, v) => s + v,
       0,
     );
+    return totals > 0;
   });
 
-  const totalsPerProject = projectNames.map((proj) => {
-    return developers.reduce(
-      (sum, dev) => sum + (allocationMap[dev]?.[proj] || 0),
-      0,
-    );
-  });
+  let projectNames = allProjects;
+  const totalsPerProjectAll = allProjects.map((proj) =>
+    developers.reduce((sum, dev) => sum + (allocationMap[dev]?.[proj] || 0), 0),
+  );
+
+  if (!showEmptyProjects) {
+    projectNames = allProjects.filter((_, idx) => totalsPerProjectAll[idx] > 0);
+  }
+
+  let totalsPerProject = projectNames.map((proj) =>
+    developers.reduce((sum, dev) => sum + (allocationMap[dev]?.[proj] || 0), 0),
+  );
+
+  const projectsWithTotals = projectNames.map((name, idx) => ({
+    name,
+    total: totalsPerProject[idx],
+  }));
+
+  if (projectSort === 'alpha') {
+    projectsWithTotals.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    projectsWithTotals.sort((a, b) => b.total - a.total);
+  }
+
+  projectNames = projectsWithTotals.map((p) => p.name);
+  totalsPerProject = projectsWithTotals.map((p) => p.total);
+
+  const totalsPerDeveloper = developers.map((dev) =>
+    projectNames.reduce((sum, proj) => sum + (allocationMap[dev]?.[proj] || 0), 0),
+  );
 
   const grandTotal = totalsPerProject.reduce((a, b) => a + b, 0);
 
@@ -114,12 +140,34 @@ export default function ResourceMatrix() {
   return (
     <div>
       <center><h2>Resource Allocation Matrix</h2></center>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '8px',
+          marginBottom: '8px',
+        }}
+      >
         <input
           type="month"
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
         />
+        <label>
+          <input
+            type="checkbox"
+            checked={showEmptyProjects}
+            onChange={(e) => setShowEmptyProjects(e.target.checked)}
+          />{' '}
+          Show projects without assignment
+        </label>
+        <select
+          value={projectSort}
+          onChange={(e) => setProjectSort(e.target.value as 'alpha' | 'total')}
+        >
+          <option value="alpha">A-Z</option>
+          <option value="total">Total assignment</option>
+        </select>
       </div>
       <table style={tableStyle}>
         <thead>
