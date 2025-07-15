@@ -17,7 +17,6 @@ export class AllocationsService {
     const overlaps = await this.repo.find({
       where: {
         team_name: data.team_name,
-        project_name: data.project_name,
         start_date: LessThanOrEqual(data.end_date),
         end_date: MoreThanOrEqual(data.start_date),
       },
