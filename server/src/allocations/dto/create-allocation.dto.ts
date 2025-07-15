@@ -17,4 +17,7 @@ export class CreateAllocationDto {
   @IsOptional()
   @IsNumber()
   hours?: number;
+
+  @IsOptional()
+  override?: boolean;
 }
