@@ -12,8 +12,65 @@ export class AllocationsService {
     private readonly repo: Repository<Allocation>,
   ) {}
 
-  create(dto: CreateAllocationDto) {
-    const allocation = this.repo.create(dto);
+  async create(dto: CreateAllocationDto) {
+    const { override, ...data } = dto as any;
+    const overlaps = await this.repo.find({
+      where: {
+        team_name: data.team_name,
+        project_name: data.project_name,
+        start_date: LessThanOrEqual(data.end_date),
+        end_date: MoreThanOrEqual(data.start_date),
+      },
+      order: { start_date: 'ASC' },
+    });
+    if (overlaps.length > 0 && !override) {
+      const days: Set<string> = new Set();
+      const newStart = new Date(data.start_date);
+      const newEnd = new Date(data.end_date);
+      for (const o of overlaps) {
+        const start = new Date(o.start_date) > newStart ? new Date(o.start_date) : newStart;
+        const end = new Date(o.end_date) < newEnd ? new Date(o.end_date) : newEnd;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          days.add(d.toISOString().slice(0, 10));
+        }
+      }
+      return { overlapDays: Array.from(days) };
+    }
+
+    if (override && overlaps.length > 0) {
+      const newStart = new Date(data.start_date);
+      const newEnd = new Date(data.end_date);
+      for (const o of overlaps) {
+        const oStart = new Date(o.start_date);
+        const oEnd = new Date(o.end_date);
+
+        const before = oStart < newStart;
+        const after = oEnd > newEnd;
+
+        if (before && after) {
+          const afterAlloc = this.repo.create({
+            team_name: o.team_name,
+            project_name: o.project_name,
+            start_date: new Date(newEnd.getTime() + 86400000).toISOString().slice(0, 10),
+            end_date: o.end_date,
+            hours: o.hours,
+          });
+          o.end_date = new Date(newStart.getTime() - 86400000).toISOString().slice(0, 10);
+          await this.repo.save(o);
+          await this.repo.save(afterAlloc);
+        } else if (before) {
+          o.end_date = new Date(newStart.getTime() - 86400000).toISOString().slice(0, 10);
+          await this.repo.save(o);
+        } else if (after) {
+          o.start_date = new Date(newEnd.getTime() + 86400000).toISOString().slice(0, 10);
+          await this.repo.save(o);
+        } else {
+          await this.repo.remove(o);
+        }
+      }
+    }
+
+    const allocation = this.repo.create(data);
     return this.repo.save(allocation);
   }
 

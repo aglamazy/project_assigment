@@ -21,6 +21,8 @@ export default function ProjectAllocationTable() {
     const [allocations, setAllocations] = useState<Allocation[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
+    const [overlapDays, setOverlapDays] = useState<string[] | null>(null);
+    const [overrideAlloc, setOverrideAlloc] = useState(false);
     const [selectedMember, setSelectedMember] = useState('');
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const sortedTeamMembers = useMemo(
@@ -150,6 +152,8 @@ export default function ProjectAllocationTable() {
             setStartDate(date);
             setEndDate(date);
         }
+        setOverlapDays(null);
+        setOverrideAlloc(false);
         setShowModal(true);
     }
 
@@ -167,22 +171,30 @@ export default function ProjectAllocationTable() {
                 start_date: startDate,
                 end_date: endDate,
                 hours: 9,
+                override: overrideAlloc,
             }),
         })
-            .then((res) => {
+            .then(async (res) => {
                 if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
+                const data = await res.json().catch(() => ({}));
+                if (data.overlapDays) {
+                    setOverlapDays(data.overlapDays);
+                    return null;
+                }
+                return data;
             })
-            .then(() => {
+            .then(async (data) => {
+                if (data === null) return; // overlap warning only
                 setShowModal(false);
                 setEditingAllocation(null);
-                return fetch(
+                setOverrideAlloc(false);
+                setOverlapDays(null);
+                const res = await fetch(
                     `${API_BASE}/allocations?project=${encodeURIComponent(projectName)}&year=${year}&month=${month}`,
                 );
-            })
-            .then(async (res) => {
                 if (!res.ok) throw new Error('Failed to refresh allocations');
-                const data: Allocation[] = await res.json();
-                setAllocations(data);
+                const refreshed: Allocation[] = await res.json();
+                setAllocations(refreshed);
             })
             .catch((err) => {
                 console.error(err);
@@ -335,6 +347,11 @@ export default function ProjectAllocationTable() {
                                     />
                                 </label>
                             </div>
+                            {overlapDays && (
+                                <div style={{ color: 'red', marginBottom: '8px' }}>
+                                    Overlaps on: {overlapDays.join(', ')}
+                                </div>
+                            )}
                             <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
                                 <button
                                     onClick={() => {
@@ -344,7 +361,18 @@ export default function ProjectAllocationTable() {
                                 >
                                     Cancel
                                 </button>
-                                <button onClick={saveAllocation}>Save</button>
+                                {overlapDays ? (
+                                    <button
+                                        onClick={() => {
+                                            setOverrideAlloc(true);
+                                            saveAllocation();
+                                        }}
+                                    >
+                                        Override
+                                    </button>
+                                ) : (
+                                    <button onClick={saveAllocation}>Save</button>
+                                )}
                             </div>
                         </div>
                     </div>
