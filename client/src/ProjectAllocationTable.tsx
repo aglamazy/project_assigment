@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useParams, useLocation} from 'react-router-dom';
 import harvestStore, {TeamMember} from './stores/HarvestStore';
 import globalStore from './stores/GlobalStore';
+import AllocationDatePicker from './AllocationDatePicker';
 
 interface Allocation {
     id: string;
@@ -341,26 +342,12 @@ export default function ProjectAllocationTable() {
                                 </label>
                             </div>
                             <div style={{marginBottom: '8px'}}>
-                                <label>
-                                    Start Date
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        style={{marginLeft: '8px'}}
-                                    />
-                                </label>
+                                <label>Start Date</label>
+                                <AllocationDatePicker value={startDate} onChange={setStartDate} />
                             </div>
                             <div style={{marginBottom: '8px'}}>
-                                <label>
-                                    End Date
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        style={{marginLeft: '8px'}}
-                                    />
-                                </label>
+                                <label>End Date</label>
+                                <AllocationDatePicker value={endDate} onChange={setEndDate} />
                             </div>
                             {overlapDays && (
                                 <div style={{ color: 'red', marginBottom: '8px' }}>
