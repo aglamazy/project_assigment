@@ -22,7 +22,7 @@ export default function ResourceMatrix() {
     new Date().toISOString().slice(0, 7),
   );
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [showEmptyProjects, setShowEmptyProjects] = useState(true);
+  const [showEmptyProjects, setShowEmptyProjects] = useState(false);
   const [projectSort, setProjectSort] = useState<'alpha' | 'total'>('alpha');
 
   useEffect(() => {
@@ -159,7 +159,7 @@ export default function ResourceMatrix() {
             checked={showEmptyProjects}
             onChange={(e) => setShowEmptyProjects(e.target.checked)}
           />{' '}
-          Show projects without assignment
+          All
         </label>
         <select
           value={projectSort}

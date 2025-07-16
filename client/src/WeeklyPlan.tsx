@@ -81,11 +81,15 @@ export default function WeeklyPlan() {
   });
 
   const dailyMap: Record<string, Record<string, string[]>> = {};
+  function normalize(date: Date): number {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  }
+
   allocations.forEach((a) => {
-    const aStart = new Date(a.start_date).getTime();
-    const aEnd = new Date(a.end_date).getTime();
+    const aStart = normalize(new Date(a.start_date));
+    const aEnd = normalize(new Date(a.end_date));
     days.forEach(({ date, key }) => {
-      const t = date.getTime();
+      const t = normalize(date);
       if (t >= aStart && t <= aEnd) {
         if (!dailyMap[a.team_name]) dailyMap[a.team_name] = {};
         if (!dailyMap[a.team_name][key]) dailyMap[a.team_name][key] = [];
@@ -95,7 +99,6 @@ export default function WeeklyPlan() {
       }
     });
   });
-
   const developers = teamMembers
     .map((m) => m.name)
     .filter((dev) => days.some(({ key }) => (dailyMap[dev]?.[key] || []).length));

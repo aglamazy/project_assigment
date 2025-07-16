@@ -126,8 +126,11 @@ export default function ProjectAllocationTable() {
             const start = new Date(a.start_date);
             const end = new Date(a.end_date);
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const date = d.toISOString().slice(0, 10);
-                arr.push({ ...a, date });
+                const day = d.getDate();
+                if (globalStore.working_days.includes(day)) {
+                    const date = d.toISOString().slice(0, 10);
+                    arr.push({ ...a, date });
+                }
             }
         });
         return arr;
