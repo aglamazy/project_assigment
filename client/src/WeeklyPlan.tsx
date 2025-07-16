@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import harvestStore, { TeamMember } from './stores/HarvestStore';
+import harvestStore, { TeamMember, Project } from './stores/HarvestStore';
+import AllocationModal from './AllocationModal';
 
 interface Allocation {
   id: string;
@@ -43,9 +44,18 @@ export default function WeeklyPlan() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
   const [selectedWeek, setSelectedWeek] = useState(isoWeekString(new Date()));
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showAll, setShowAll] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedProject, setSelectedProject] = useState('');
+  const [overlapDays, setOverlapDays] = useState<string[] | null>(null);
 
   useEffect(() => {
     harvestStore.getTeamMembers().then(setTeamMembers).catch(() => setTeamMembers([]));
+    harvestStore.getProjects().then(setProjects).catch(() => setProjects([]));
   }, []);
 
   useEffect(() => {
@@ -99,9 +109,60 @@ export default function WeeklyPlan() {
       }
     });
   });
-  const developers = teamMembers
-    .map((m) => m.name)
-    .filter((dev) => days.some(({ key }) => (dailyMap[dev]?.[key] || []).length));
+
+  function openModal(dateStr: string, dev = '') {
+    setSelectedMember(dev);
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+    setSelectedProject(projects[0]?.name || '');
+    setOverlapDays(null);
+    setShowModal(true);
+  }
+
+  function saveAllocation(
+    team_name: string,
+    project_name: string,
+    start_date: string,
+    end_date: string,
+    override: boolean,
+  ) {
+    fetch(`${API_BASE}/allocations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        team_name,
+        project_name,
+        start_date,
+        end_date,
+        hours: 9,
+        override,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to save allocation: ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+        if (data.overlapDays) {
+          setOverlapDays(data.overlapDays);
+          return null;
+        }
+        return data;
+      })
+      .then(async (data) => {
+        if (data === null) return;
+        setShowModal(false);
+        setOverlapDays(null);
+        const { start, end } = getWeekStartEnd(selectedWeek);
+        const s = start.toISOString().slice(0, 10);
+        const e = end.toISOString().slice(0, 10);
+        const res = await fetch(`${API_BASE}/allocations?start=${s}&end=${e}`);
+        if (!res.ok) throw new Error('Failed to refresh allocations');
+        const refreshed: Allocation[] = await res.json();
+        setAllocations(refreshed);
+      })
+      .catch((err) => console.error(err));
+  }
+  const allDevelopers = teamMembers.map((m) => m.name);
+  const developers = (showAll ? allDevelopers : allDevelopers.filter((dev) => days.some(({ key }) => (dailyMap[dev]?.[key] || []).length)));
 
   const tableStyle: React.CSSProperties = {
     borderCollapse: 'collapse',
@@ -120,6 +181,10 @@ export default function WeeklyPlan() {
         style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}
       >
         <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
+        <label>
+          <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> All
+        </label>
+        <button onClick={() => openModal(days[0].key)}>+ Add Allocation</button>
       </div>
       <table style={tableStyle}>
         <thead>
@@ -137,7 +202,11 @@ export default function WeeklyPlan() {
             <tr key={dev}>
               <td style={cellStyle}>{dev}</td>
               {days.map(({ key, date }) => (
-                <td key={key} style={cellStyle}>
+                <td
+                  key={key}
+                  style={{ ...cellStyle, cursor: 'pointer' }}
+                  onDoubleClick={() => openModal(key, dev)}
+                >
                   {(dailyMap[dev]?.[key] || []).map((proj) => (
                     <div
                       key={proj}
@@ -161,6 +230,30 @@ export default function WeeklyPlan() {
           ))}
         </tbody>
       </table>
+      {showModal && (
+        <AllocationModal
+          show={showModal}
+          teamMembers={teamMembers}
+          projects={projects.map((p) => p.name)}
+          initial={{ team_name: selectedMember, start_date: startDate, end_date: endDate }}
+          initialProject={selectedProject}
+          overlapDays={overlapDays}
+          onCancel={() => {
+            setShowModal(false);
+            setOverlapDays(null);
+          }}
+          onSave={({ team_name, project_name, start_date, end_date }) => {
+            setSelectedMember(team_name);
+            setSelectedProject(project_name || '');
+            setStartDate(start_date);
+            setEndDate(end_date);
+            saveAllocation(team_name, project_name || '', start_date, end_date, false);
+          }}
+          onOverride={() => {
+            saveAllocation(selectedMember, selectedProject, startDate, endDate, true);
+          }}
+        />
+      )}
     </div>
   );
 }
