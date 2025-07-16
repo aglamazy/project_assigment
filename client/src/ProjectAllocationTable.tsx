@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useParams, useLocation} from 'react-router-dom';
 import harvestStore, {TeamMember} from './stores/HarvestStore';
 import globalStore from './stores/GlobalStore';
+import AllocationModal from './AllocationModal';
 
 interface Allocation {
     id: string;
@@ -172,7 +173,7 @@ export default function ProjectAllocationTable() {
         setShowModal(true);
     }
 
-    function saveAllocation() {
+    function saveAllocation(team_name: string, start_date: string, end_date: string, override: boolean) {
         const url = editingAllocation
             ? `${API_BASE}/allocations/${editingAllocation.id}`
             : `${API_BASE}/allocations`;
@@ -181,12 +182,12 @@ export default function ProjectAllocationTable() {
             method,
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                team_name: selectedMember,
+                team_name,
                 project_name: projectName,
-                start_date: startDate,
-                end_date: endDate,
+                start_date,
+                end_date,
                 hours: 9,
-                override: overrideAlloc,
+                override,
             }),
         })
             .then(async (res) => {
@@ -309,88 +310,29 @@ export default function ProjectAllocationTable() {
                 </table>
                 )}
                 {showModal && (
-                    <div
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'rgba(0,0,0,0.3)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                    <AllocationModal
+                        show={showModal}
+                        teamMembers={teamMembers}
+                        initial={{ team_name: selectedMember, start_date: startDate, end_date: endDate }}
+                        overlapDays={overlapDays}
+                        onCancel={() => {
+                            setShowModal(false);
+                            setEditingAllocation(null);
+                            setOverrideAlloc(false);
+                            setOverlapDays(null);
                         }}
-                    >
-                        <div style={{background: '#fff', padding: '20px', minWidth: '300px'}}>
-                            <h3>{editingAllocation ? 'Edit Allocation' : 'Add Allocation'}</h3>
-                            <div style={{marginBottom: '8px'}}>
-                                <label>
-                                    Developer
-                                    <input
-                                        list="team-members-list"
-                                        value={selectedMember}
-                                        onChange={(e) => setSelectedMember(e.target.value)}
-                                        style={{marginLeft: '8px'}}
-                                    />
-                                    <datalist id="team-members-list">
-                                        {sortedTeamMembers.map((m) => (
-                                            <option key={m.id} value={m.name} />
-                                        ))}
-                                    </datalist>
-                                </label>
-                            </div>
-                            <div style={{marginBottom: '8px'}}>
-                                <label>
-                                    Start Date
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        style={{marginLeft: '8px'}}
-                                    />
-                                </label>
-                            </div>
-                            <div style={{marginBottom: '8px'}}>
-                                <label>
-                                    End Date
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        style={{marginLeft: '8px'}}
-                                    />
-                                </label>
-                            </div>
-                            {overlapDays && (
-                                <div style={{ color: 'red', marginBottom: '8px' }}>
-                                    Overlaps on: {overlapDays.join(', ')}
-                                </div>
-                            )}
-                            <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
-                                <button
-                                    onClick={() => {
-                                        setShowModal(false);
-                                        setEditingAllocation(null);
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                {overlapDays ? (
-                                    <button
-                                        onClick={() => {
-                                            setOverrideAlloc(true);
-                                            saveAllocation();
-                                        }}
-                                    >
-                                        Override
-                                    </button>
-                                ) : (
-                                    <button onClick={saveAllocation}>Save</button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                        onSave={({ team_name, start_date, end_date }) => {
+                            setSelectedMember(team_name);
+                            setStartDate(start_date);
+                            setEndDate(end_date);
+                            setOverrideAlloc(false);
+                            saveAllocation(team_name, start_date, end_date, false);
+                        }}
+                        onOverride={() => {
+                            setOverrideAlloc(true);
+                            saveAllocation(selectedMember, startDate, endDate, true);
+                        }}
+                    />
                 )}
             </div>
         </>
