@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import harvestStore, { TeamMember } from './stores/HarvestStore';
 
 interface Allocation {
@@ -38,6 +39,7 @@ function getWeekStartEnd(value: string) {
 }
 
 export default function WeeklyPlan() {
+  const navigate = useNavigate();
   const [teamMembers, setTeamMembers] = useState<TeamMember[] | null>(null);
   const [selectedWeek, setSelectedWeek] = useState(isoWeekString(new Date()));
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -120,8 +122,10 @@ export default function WeeklyPlan() {
         <thead>
           <tr>
             <th style={cellStyle}></th>
-            {dayNames.map((d) => (
-              <th key={d} style={cellStyle}>{d}</th>
+            {days.map(({ date }, idx) => (
+              <th key={idx} style={cellStyle}>
+                {dayNames[idx]} {date.getDate()}
+              </th>
             ))}
           </tr>
         </thead>
@@ -129,9 +133,25 @@ export default function WeeklyPlan() {
           {developers.map((dev) => (
             <tr key={dev}>
               <td style={cellStyle}>{dev}</td>
-              {days.map(({ key }) => (
+              {days.map(({ key, date }) => (
                 <td key={key} style={cellStyle}>
-                  {(dailyMap[dev]?.[key] || []).join(', ')}
+                  {(dailyMap[dev]?.[key] || []).map((proj) => (
+                    <div
+                      key={proj}
+                      style={{
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        color: '#007bff',
+                      }}
+                      onClick={() =>
+                        navigate(
+                          `/project/${encodeURIComponent(proj)}?year=${date.getFullYear()}&month=${date.getMonth() + 1}`,
+                        )
+                      }
+                    >
+                      {proj}
+                    </div>
+                  ))}
                 </td>
               ))}
             </tr>

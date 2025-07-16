@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, useLocation} from 'react-router-dom';
 import harvestStore, {TeamMember} from './stores/HarvestStore';
 import globalStore from './stores/GlobalStore';
 
@@ -15,9 +15,13 @@ interface Allocation {
 const API_BASE = process.env.SERVER_URL || 'http://localhost:3001';
 export default function ProjectAllocationTable() {
     const {projectName = ''} = useParams<{ projectName?: string }>();
+    const {search} = useLocation();
+    const params = new URLSearchParams(search);
     const now = new Date();
-    const [year, setYear] = useState(now.getFullYear());
-    const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
+    const initYear = Number(params.get('year')) || now.getFullYear();
+    const initMonth = Number(params.get('month')) || now.getMonth() + 1;
+    const [year, setYear] = useState(initYear);
+    const [month, setMonth] = useState(initMonth); // 1-based
     const [allocations, setAllocations] = useState<Allocation[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
@@ -31,6 +35,14 @@ export default function ProjectAllocationTable() {
     );
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    useEffect(() => {
+        const paramsUpdate = new URLSearchParams(search);
+        const y = Number(paramsUpdate.get('year'));
+        const m = Number(paramsUpdate.get('month'));
+        if (y) setYear(y);
+        if (m) setMonth(m);
+    }, [search]);
 
     const monthNames = [
         'January',
