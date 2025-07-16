@@ -217,6 +217,25 @@ export default function ProjectAllocationTable() {
             });
     }
 
+    function deleteAllocation() {
+        if (!editingAllocation) return;
+        fetch(`${API_BASE}/allocations/${editingAllocation.id}`, {method: 'DELETE'})
+            .then(async (res) => {
+                if (!res.ok) throw new Error(`Failed to delete allocation: ${res.status}`);
+                setShowModal(false);
+                setEditingAllocation(null);
+                const refreshedRes = await fetch(
+                    `${API_BASE}/allocations?project=${encodeURIComponent(projectName)}&year=${year}&month=${month}`,
+                );
+                if (!refreshedRes.ok) throw new Error('Failed to refresh allocations');
+                const refreshed: Allocation[] = await refreshedRes.json();
+                setAllocations(refreshed);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
+
     const tableStyle: React.CSSProperties = {
         borderCollapse: 'collapse',
         width: '100%',
