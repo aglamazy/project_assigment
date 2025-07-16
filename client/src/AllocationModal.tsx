@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TeamMember } from './stores/HarvestStore';
+import AllocationDatePicker from "./AllocationDatePicker";
 
 interface Props {
   show: boolean;
@@ -100,24 +101,14 @@ export default function AllocationModal({
         <div style={{ marginBottom: '8px' }}>
           <label>
             Start Date
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              style={{ marginLeft: '8px' }}
-            />
           </label>
+          <AllocationDatePicker value={startDate} onChange={setStartDate} />
         </div>
         <div style={{ marginBottom: '8px' }}>
           <label>
             End Date
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              style={{ marginLeft: '8px' }}
-            />
           </label>
+          <AllocationDatePicker value={endDate} onChange={setEndDate} />
         </div>
         {overlapDays && (
           <div style={{ color: 'red', marginBottom: '8px' }}>
@@ -142,7 +133,7 @@ export default function AllocationModal({
             </button>
           ) : (
             <button
-              onClick={() =>
+                setEditingAlloc      onClick={() =>
                 onSave({
                   team_name: selectedMember,
                   start_date: startDate,
