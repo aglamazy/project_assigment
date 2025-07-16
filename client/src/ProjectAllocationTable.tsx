@@ -216,6 +216,25 @@ export default function ProjectAllocationTable() {
             });
     }
 
+    function deleteAllocation() {
+        if (!editingAllocation) return;
+        fetch(`${API_BASE}/allocations/${editingAllocation.id}`, {method: 'DELETE'})
+            .then(async (res) => {
+                if (!res.ok) throw new Error(`Failed to delete allocation: ${res.status}`);
+                setShowModal(false);
+                setEditingAllocation(null);
+                const refreshedRes = await fetch(
+                    `${API_BASE}/allocations?project=${encodeURIComponent(projectName)}&year=${year}&month=${month}`,
+                );
+                if (!refreshedRes.ok) throw new Error('Failed to refresh allocations');
+                const refreshed: Allocation[] = await refreshedRes.json();
+                setAllocations(refreshed);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
+
     const tableStyle: React.CSSProperties = {
         borderCollapse: 'collapse',
         width: '100%',
@@ -368,6 +387,16 @@ export default function ProjectAllocationTable() {
                                 </div>
                             )}
                             <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
+                                {editingAllocation && (
+                                    <button
+                                        style={{marginRight: 'auto', color: 'red'}}
+                                        onClick={() => {
+                                            if (confirm('Delete this allocation?')) deleteAllocation();
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => {
                                         setShowModal(false);
