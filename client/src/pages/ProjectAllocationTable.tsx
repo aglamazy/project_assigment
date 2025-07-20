@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useParams, useLocation} from 'react-router-dom';
-import harvestStore, {TeamMember} from './stores/HarvestStore';
-import globalStore from './stores/GlobalStore';
-import AllocationModal from './AllocationModal';
+import harvestStore, {TeamMember} from '../stores/HarvestStore';
+import globalStore from '../stores/GlobalStore';
+import AllocationModal from '../pageParts/AllocationModal';
 
 interface Allocation {
     id: string;
@@ -27,7 +27,7 @@ export default function ProjectAllocationTable() {
     const [showModal, setShowModal] = useState(false);
     const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
     const [overlapDays, setOverlapDays] = useState<string[] | null>(null);
-    const [overrideAlloc, setOverrideAlloc] = useState(false);
+    const [setOverrideAlloc] = useState(false);
     const [selectedMember, setSelectedMember] = useState('');
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const sortedTeamMembers = useMemo(

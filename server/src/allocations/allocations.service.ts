@@ -73,55 +73,36 @@ export class AllocationsService {
     return this.repo.save(allocation);
   }
 
-  findAll() {
-    return this.repo.find();
+
+  async searchAllocations({ project, team_name, year, month, start, end }: { project?: string, team_name?: string, year?: string, month?: string, start?: string, end?: string }) {
+    let where: any = {};
+    // Date range logic
+    let rangeStart: string | undefined;
+    let rangeEnd: string | undefined;
+    if (start && end) {
+      rangeStart = start;
+      rangeEnd = end;
+    } else if (year && month) {
+      const y = parseInt(year, 10);
+      const m = parseInt(month, 10);
+      if (!isNaN(y) && !isNaN(m)) {
+        rangeStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
+        rangeEnd = new Date(y, m, 0).toISOString().slice(0, 10);
+      }
+    }
+    if (rangeStart && rangeEnd) {
+      where.start_date = LessThanOrEqual(rangeEnd);
+      where.end_date = MoreThanOrEqual(rangeStart);
+    }
+    if (project) {
+      where.project_name = project;
+    }
+    if (team_name) {
+      where.team_name = team_name;
+    }
+    return this.repo.find({ where, order: { start_date: 'ASC' } });
   }
 
-  findByProjectAndMonth(project: string, year: number, month: number) {
-    const start = new Date(year, month - 1, 1).toISOString().slice(0, 10);
-    const end = new Date(year, month, 0).toISOString().slice(0, 10);
-    return this.repo.find({
-      where: {
-        project_name: project,
-        start_date: LessThanOrEqual(end),
-        end_date: MoreThanOrEqual(start),
-      },
-      order: { start_date: 'ASC' },
-    });
-  }
-
-  findByMonth(year: number, month: number) {
-    const start = new Date(year, month - 1, 1).toISOString().slice(0, 10);
-    const end = new Date(year, month, 0).toISOString().slice(0, 10);
-    return this.repo.find({
-      where: {
-        start_date: LessThanOrEqual(end),
-        end_date: MoreThanOrEqual(start),
-      },
-      order: { start_date: 'ASC' },
-    });
-  }
-
-  findByDateRange(start: string, end: string) {
-    return this.repo.find({
-      where: {
-        start_date: LessThanOrEqual(end),
-        end_date: MoreThanOrEqual(start),
-      },
-      order: { start_date: 'ASC' },
-    });
-  }
-
-  findByProjectAndDateRange(project: string, start: string, end: string) {
-    return this.repo.find({
-      where: {
-        project_name: project,
-        start_date: LessThanOrEqual(end),
-        end_date: MoreThanOrEqual(start),
-      },
-      order: { start_date: 'ASC' },
-    });
-  }
 
   async findOne(id: string) {
     const allocation = await this.repo.findOne({ where: { id } });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import harvestStore, { Project, TeamMember } from './stores/HarvestStore';
+import harvestStore, { Project, TeamMember } from '../stores/HarvestStore';
 
 interface Allocation {
   id: string;

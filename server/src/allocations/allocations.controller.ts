@@ -1,39 +1,31 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AllocationsService } from './allocations.service';
 import { CreateAllocationDto } from './dto/create-allocation.dto';
 import { UpdateAllocationDto } from './dto/update-allocation.dto';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('allocations')
 @Controller('allocations')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class AllocationsController {
   constructor(private readonly service: AllocationsService) {}
 
   @Get()
+  @ApiQuery({ name: 'project', required: false })
+  @ApiQuery({ name: 'team_name', required: false })
+  @ApiQuery({ name: 'year', required: false })
+  @ApiQuery({ name: 'month', required: false })
+  @ApiQuery({ name: 'start', required: false })
+  @ApiQuery({ name: 'end', required: false })
   findAll(
     @Query('project') project?: string,
+    @Query('team_name') team_name?: string,
     @Query('year') year?: string,
     @Query('month') month?: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    if (start && end) {
-      if (project) {
-        return this.service.findByProjectAndDateRange(project, start, end);
-      }
-      return this.service.findByDateRange(start, end);
-    }
-    if (year && month) {
-      const y = parseInt(year, 10);
-      const m = parseInt(month, 10);
-      if (isNaN(y) || isNaN(m)) {
-        throw new BadRequestException('Invalid year or month');
-      }
-      if (project) {
-        return this.service.findByProjectAndMonth(project, y, m);
-      }
-      return this.service.findByMonth(y, m);
-    }
-    return this.service.findAll();
+    return this.service.searchAllocations({ project, team_name, year, month, start, end });
   }
 
   @Get(':id')

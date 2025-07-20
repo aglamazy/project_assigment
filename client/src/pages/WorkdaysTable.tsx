@@ -1,5 +1,5 @@
 import React from 'react';
-import globalStore, { Workday } from './stores/GlobalStore';
+import globalStore, { Workday } from '../stores/GlobalStore';
 
 type WorkdayData = Workday;
 

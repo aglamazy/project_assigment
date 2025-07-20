@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import harvestStore, { TeamMember, Project } from './stores/HarvestStore';
-import AllocationModal from './AllocationModal';
+import harvestStore, { TeamMember, Project } from '../stores/HarvestStore';
+import AllocationModal from '../pageParts/AllocationModal';
 
 interface Allocation {
   id: string;
@@ -200,7 +200,7 @@ export default function WeeklyPlan() {
         <tbody>
           {developers.map((dev) => (
             <tr key={dev}>
-              <td style={cellStyle}>{dev}</td>
+              <td style={{ ...cellStyle, cursor: 'pointer', color: '#007bff' }} onClick={() => navigate(`/developer/${encodeURIComponent(dev)}`)}>{dev}</td>
               {days.map(({ key, date }) => (
                 <td
                   key={key}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TeamMember } from './stores/HarvestStore';
+import { TeamMember } from '../stores/HarvestStore';
 import AllocationDatePicker from "./AllocationDatePicker";
 
 interface Props {
